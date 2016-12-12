@@ -12,6 +12,7 @@ module Hypervisor.Console(
  where
 
 import Control.Concurrent
+import Control.Concurrent.BoundedChan
 import Control.Exception
 import Control.Monad
 import Data.Word
@@ -28,7 +29,7 @@ data ConsoleMsg = WriteString String (MVar ())
                 | ReadString Int (MVar String)
                 | Advance
 
-newtype Console = Console (Chan ConsoleMsg)
+newtype Console = Console (BoundedChan ConsoleMsg)
 
 -- |Initialize the Xen console associated with this domain at boot time.
 -- This has the side effect of rewiring putStr, getChar, and friends to
@@ -46,7 +47,7 @@ initXenConsole  = do
 -- channel.
 initConsole :: MFN -> Port -> IO Console
 initConsole conMFN conPort  = do
-  commChan <- newChan
+  commChan <- newChan 1024
   conPtr   <- handle (mapMFN conMFN) (mfnToVPtr conMFN)
   startConsoleThread commChan conPtr conPort
   setPortHandler conPort $ writeChan commChan Advance
@@ -60,7 +61,7 @@ initConsole conMFN conPort  = do
 readConsole :: Console -> Int -> IO String
 readConsole (Console commChan) amt = do
   resMV <- newEmptyMVar
-  writeChan commChan (ReadString amt resMV)
+  tryWriteChan commChan (ReadString amt resMV)
   postProcessOutput `fmap` takeMVar resMV
 
 -- |Write data to the console, blocking until the string has been written to
@@ -70,7 +71,7 @@ readConsole (Console commChan) amt = do
 writeConsole :: Console -> String -> IO ()
 writeConsole (Console commChan) str = do
   resMV <- newEmptyMVar
-  writeChan commChan (WriteString (preProcessInput str) resMV)
+  tryWriteChan commChan (WriteString (preProcessInput str) resMV)
   takeMVar resMV
 
 -- ----------------------------------------------------------------------------
