@@ -208,9 +208,12 @@ HALVM_GHC_CONFIGURE_FLAGS += --with-ranlib=$(RANLIB)
 HALVM_GHC_CONFIGURE_FLAGS += --with-ghc=$(GHC)
 HALVM_GHC_CONFIGURE_FLAGS += --prefix=$(prefix)
 HALVM_GHC_CONFIGURE_FLAGS += --disable-large-address-space
+HALVM_GHC_CONFIGURE_FLAGS += --enable-urandom=$(EMULATE_URANDOM)
 
 ifeq ($(INTEGER_LIBRARY),integer-gmp)
 HALVM_GHC_CONFIGURE_FLAGS += --with-gmp-includes=$(TOPDIR)/src/gmp
+else
+HALVM_GHC_CONFIGURE_FLAGS += --enable-gmp=no
 endif
 
 $(TOPDIR)/halvm-ghc/mk/config.mk: $(GHC_PREPPED)
@@ -332,7 +335,8 @@ $(SRC_TARBALL):
 ifeq ($(PACKAGE_TARGET),RPM)
 .PHONY: packages
 packages: $(SRC_TARBALL)
-	mkdir -p rpmbuild/{SOURCES,SPECS}
+	mkdir -p rpmbuild/SOURCES
+	mkdir -p rpmbuild/SPECS
 	cp $(SRC_TARBALL) $(TOPDIR)/rpmbuild/SOURCES/
 	cp $(TOPDIR)/src/misc/HaLVM.spec $(TOPDIR)/rpmbuild/SPECS/HaLVM.spec
 	mkdir -p packages

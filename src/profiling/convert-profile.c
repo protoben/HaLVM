@@ -50,7 +50,7 @@ int main(int argc, char **argv)
     return -3;
   }
 
-  printf("Transferring %d bytes\n", size);
+  printf("Transferring %lu bytes\n", size);
   while(size > 0) {
     size_t amount = (size > 4096) ? 4096 : size;
     done = fread(buffer, 1, amount, infile);
